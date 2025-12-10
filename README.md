@@ -53,7 +53,6 @@ The dashboard is **your primary interface** for interacting with tasks.
 -   CLI commands: `list`, `complete`, `move` for optional manual overrides    
 -   Automatic dashboard regeneration with sorting, grouping, and derived views    
 -   Optional archiving of completed tasks to `Completed.md` 
--   Advanced priority handling (`!1` highest, `!2` etc.)   
 -   Support multiple buckets per task    
 -   Hotkey/global shortcut integration for quick task addition    
 -   Task search/filtering in CLI (by bucket, due date, text) 

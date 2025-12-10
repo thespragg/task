@@ -48,16 +48,12 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact_name: shoal
-            asset_name: shoal-linux-x86_64
+            artifact_name: task
+            asset_name: task-linux-x86_64
           - os: macos-latest
             target: aarch64-apple-darwin
-            artifact_name: shoal
-            asset_name: shoal-macos-arm64
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact_name: shoal.exe
-            asset_name: shoal-windows-x86_64.exe
+            artifact_name: task
+            asset_name: task-macos-arm64
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -133,7 +129,7 @@ jobs:
             ### Installation
             1. Download the binary for your platform
             2. Verify the checksum (optional but recommended)
-            3. Make it executable: `chmod +x shoal` (Unix-like systems)
-            4. Move to your PATH: `mv shoal /usr/local/bin/shoal`
+            3. Make it executable: `chmod +x task` (Unix-like systems)
+            4. Move to your PATH: `mv task /usr/local/bin/task`
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
