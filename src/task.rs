@@ -1,4 +1,4 @@
-use crate::utils::ensure_tasks_folder;
+use crate::utils::ensure_vault_folder;
 use std::env;
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
@@ -12,11 +12,11 @@ pub fn add_task_with_parsing(
     link_flag: Option<String>,
     text: String,
 ) {
-    let folder = env::var("TASKS_FOLDER")
-        .expect("TASKS_FOLDER env var not set. Run worker first or set manually.");
+    let folder = env::var("VAULT_FOLDER")
+        .expect("VAULT_FOLDER env var not set. Run worker first or set manually.");
 
-    let inbox = PathBuf::from(&folder).join("Tasks").join("Inbox.md");
-    ensure_tasks_folder(&inbox.parent().unwrap());
+    let tasks = PathBuf::from(&folder).join("Tasks").join("Tasks.md");
+    ensure_vault_folder(&tasks.parent().unwrap());
 
     let mut task_text = text.clone();
 
@@ -52,10 +52,10 @@ pub fn add_task_with_parsing(
     let line = format!("- [ ] {} #{}{}{} id:{}", task_text, bucket, due_str, link_str, id);
 
     let mut existing = String::new();
-    if inbox.exists() {
+    if tasks.exists() {
         OpenOptions::new()
             .read(true)
-            .open(&inbox)
+            .open(&tasks)
             .unwrap()
             .read_to_string(&mut existing)
             .unwrap();
@@ -65,13 +65,13 @@ pub fn add_task_with_parsing(
         .write(true)
         .truncate(true)
         .create(true)
-        .open(&inbox)
+        .open(&tasks)
         .unwrap();
 
-    writeln!(file, "{}", line).unwrap();
     if !existing.is_empty() {
         writeln!(file, "{}", existing).unwrap();
     }
+    writeln!(file, "{}", line).unwrap();
 
     println!("Added task: {}", line);
 }

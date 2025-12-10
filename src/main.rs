@@ -1,6 +1,7 @@
 mod task;
 mod utils;
 mod worker;
+mod install;
 
 use clap::Parser;
 use std::path::PathBuf;
@@ -40,7 +41,7 @@ fn main() {
             .expect("Worker mode requires --folder/-f");
 
         if args.install {
-            worker::install_worker(&folder);
+            install::install_worker(&folder);
             return;
         }
 

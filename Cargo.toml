@@ -9,3 +9,4 @@ whoami = "1.6.1"
 uuid = { version = "1.19", features = ["v4"] }
 chrono = "0.4.42"
 regex = "1.12.2"
+notify = "8.2.0"

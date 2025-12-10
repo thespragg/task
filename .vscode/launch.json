@@ -9,7 +9,7 @@
             "args": [
                 "--worker",
                 "--folder",
-                "/home/thespragg/Tasks"
+                ".vault"
             ],
             "cwd": "${workspaceFolder}",
             "stopOnEntry": false
@@ -20,7 +20,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/target/debug/task",
             "env": {
-                "TASKS_FOLDER": "/home/thespragg/Tasks"
+                "VAULT_FOLDER": ".vault"
             },
             "args": [
                 "--bucket",
