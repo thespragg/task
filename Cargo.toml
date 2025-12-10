@@ -1,0 +1,11 @@
+[package]
+name = "task"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.53", features = ["derive"] }
+whoami = "1.6.1"
+uuid = { version = "1.19", features = ["v4"] }
+chrono = "0.4.42"
+regex = "1.12.2"
