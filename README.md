@@ -13,6 +13,7 @@ Install the worker
 ```bash 
 sudo task --worker --folder <Obsidian Vault> --install
 ```
+The worker will generate the task dashboard and keep it in sync with the Inbox and bucket files.
 
 ## Usage
 
@@ -28,38 +29,40 @@ Or embed metadata directly in the task text:
 ```bash
 task Finish API schema #work @2025-12-15 [[api-design]]
 ```
+-   `#bucket` → task category
+-   `@YYYY-MM-DD` → due date    
+-   `[[link]]` → context link    
+-   `!1` → optional priority (1 = highest)
 
-### Completing a task
+## Dashboard
 
-Use the unique task ID to mark a task complete:
-```bash
-task complete 550e8400-e29b-41d4-a716-446655440000
-```
+The worker generates a `Dashboard.md` in your vault:
 
-### Listing tasks
+-   Shows all tasks, grouped by bucket    
+-   Sorted by priority and due date    
+-   Highlights overdue tasks    
+-   Includes “Upcoming tasks” section (next 7 days)    
+-   Reflects task completion in real time
 
-List all tasks:
+The dashboard is **your primary interface** for interacting with tasks.
 
-```bash
-task list
-```
 ## TODO
 
 ### Core features to implement
 
-- [ ] `list` command to display all tasks with IDs, buckets, due dates, and completion status
-- [ ] `complete` command integrated with UUID-based task marking
-- [ ] Optional archiving of completed tasks to `Completed.md`
-- [ ] Dashboard regeneration logic for all task files
-- [ ] Priority handling (e.g., `!1` for high priority)
-- [ ] Support multiple buckets per task
-- [ ] Hotkey/global shortcut integration for quick task addition
-- [ ] Task search/filtering in CLI (by bucket, due date, or text)
-- [ ] Optional notifications for due tasks
+-   CLI commands: `list`, `complete`, `move` for optional manual overrides    
+-   Automatic dashboard regeneration with sorting, grouping, and derived views    
+-   Optional archiving of completed tasks to `Completed.md` 
+-   Advanced priority handling (`!1` highest, `!2` etc.)   
+-   Support multiple buckets per task    
+-   Hotkey/global shortcut integration for quick task addition    
+-   Task search/filtering in CLI (by bucket, due date, text) 
+-   Optional notifications for due tasks
 
 ### Code quality & maintenance
 
-- [ ] Error handling improvements (file access, invalid input, malformed metadata)
-- [ ] Refactor CLI subcommands using `clap::Subcommand` for better organization
-- [ ] Logging framework for worker mode
-
+-   Error handling improvements (file access, invalid input, malformed metadata)   
+-   Unit tests for task parsing, addition, completion, and dashboard regeneration    
+-   Integration tests for worker + CLI commands    
+-   Refactor CLI subcommands using `clap::Subcommand` for better organization
+-   Logging framework for worker mode
