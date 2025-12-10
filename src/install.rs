@@ -18,6 +18,8 @@ pub fn install_worker(folder: &PathBuf) {
 
 #[cfg(target_os = "macos")]
 fn install_launchd(exe_path: &std::path::Path, folder: &PathBuf) {
+    use std::{fs, process::Command};
+
     let plist_content = format!(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
@@ -49,7 +51,7 @@ fn install_launchd(exe_path: &std::path::Path, folder: &PathBuf) {
     fs::write(&plist_path, plist_content).expect("Failed to write plist file");
 
     Command::new("launchctl")
-        .args(&["load", plist_path.to_str().unwrap()])
+        .args(["load", plist_path.to_str().unwrap()])
         .status()
         .expect("Failed to load launchd plist");
 

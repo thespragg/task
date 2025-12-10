@@ -2,6 +2,7 @@ mod task;
 mod utils;
 mod worker;
 mod install;
+mod task_parser;
 
 use clap::Parser;
 use std::path::PathBuf;
@@ -27,6 +28,9 @@ struct Cli {
     #[clap(short, long)]
     link: Option<String>,
 
+    #[clap(short, long)]
+    priority: Option<u8>,
+
     #[clap(trailing_var_arg = true)]
     text: Vec<String>,
 }
@@ -45,7 +49,7 @@ fn main() {
             return;
         }
 
-        worker::run_worker(folder);
+        worker::run_worker(folder).unwrap();
     } else {
         let task_text_raw = args.text.join(" ");
 
@@ -58,6 +62,7 @@ fn main() {
             args.bucket.clone(),
             args.due.clone(),
             args.link.clone(),
+            args.priority,
             task_text_raw,
         );
     }

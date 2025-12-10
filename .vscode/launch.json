@@ -12,7 +12,8 @@
                 ".vault"
             ],
             "cwd": "${workspaceFolder}",
-            "stopOnEntry": false
+            "stopOnEntry": false,
+            "preLaunchTask": "cargo build"
         },
         {
             "name": "Launch as task",
@@ -23,12 +24,11 @@
                 "VAULT_FOLDER": ".vault"
             },
             "args": [
-                "--bucket",
-                "home",
-                "This is a task"
+                "This is a task #work"
             ],
             "cwd": "${workspaceFolder}",
-            "stopOnEntry": false
+            "stopOnEntry": false,
+            "preLaunchTask": "cargo build"
         }
-    ],
+    ]
 }
