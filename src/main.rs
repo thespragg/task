@@ -1,7 +1,6 @@
 mod task;
 mod utils;
 mod worker;
-mod install;
 mod task_parser;
 
 use clap::Parser;
@@ -33,21 +32,24 @@ struct Cli {
 
     #[clap(trailing_var_arg = true)]
     text: Vec<String>,
+
+    #[clap(short, long)]
+    version: bool
 }
 
 fn main() {
     let args = Cli::parse();
+
+    if args.version {
+       println!("Task Version: {}", env!("CARGO_PKG_VERSION"));
+       return;
+    }
 
     if args.worker {
         let folder = args
             .folder
             .clone()
             .expect("Worker mode requires --folder/-f");
-
-        if args.install {
-            install::install_worker(&folder);
-            return;
-        }
 
         worker::run_worker(folder).unwrap();
     } else {

@@ -1,9 +1,12 @@
-use notify::{RecommendedWatcher, RecursiveMode, Watcher, EventKind};
+use crate::task_parser::ParsedTask;
 use crate::utils::ensure_vault_folder;
 
+use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+
+use itertools::{self, Itertools};
 use std::collections::HashMap;
 use std::env;
-use std::fs::{OpenOptions, File};
+use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
@@ -49,19 +52,19 @@ impl FileDebouncer {
     fn should_process(&mut self, path: &Path) -> bool {
         if let Some(watched) = self.files.get_mut(path) {
             let elapsed = watched.last_processed.elapsed();
-            
+
             if elapsed < self.debounce_duration {
                 return false;
             }
 
             if let Ok(content) = std::fs::read_to_string(path) {
                 let hash = simple_hash(&content);
-                
+
                 if watched.last_content_hash == Some(hash) {
                     watched.last_processed = Instant::now();
                     return false;
                 }
-                
+
                 watched.last_content_hash = Some(hash);
                 watched.last_processed = Instant::now();
                 return true;
@@ -80,13 +83,13 @@ impl FileDebouncer {
 fn simple_hash(s: &str) -> u64 {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     let mut hasher = DefaultHasher::new();
     s.hash(&mut hasher);
     hasher.finish()
 }
 
-pub fn run_worker(folder: PathBuf) -> Result<()>{
+pub fn run_worker(folder: PathBuf) -> Result<()> {
     unsafe { env::set_var("VAULT_FOLDER", &folder) };
 
     let tasks_dir = folder.join("Tasks");
@@ -109,11 +112,13 @@ pub fn run_worker(folder: PathBuf) -> Result<()>{
         .expect("failed to watch Tasks.md");
 
     let mut debouncer = FileDebouncer::new(Duration::from_millis(500));
-    
+
+    handle_generate_dashboard(&tasks_dir);
+
     let tasks_file_clone = tasks_file.clone();
     debouncer.add_file(tasks_file_clone.canonicalize()?, move |path| {
         println!("Processing changes to: {}", path.display());
-        normalize_task_file(path);
+        handle_generate_dashboard(&tasks_dir);
     });
 
     // let another_file = folder.join("Dashboard.md");
@@ -127,7 +132,7 @@ pub fn run_worker(folder: PathBuf) -> Result<()>{
         match rx.recv() {
             Ok(event) => {
                 let event = event.unwrap();
-                
+
                 if let EventKind::Modify(notify::event::ModifyKind::Data(_)) = event.kind {
                     for path in event.paths {
                         if debouncer.should_process(&path) {
@@ -143,35 +148,74 @@ pub fn run_worker(folder: PathBuf) -> Result<()>{
     }
 }
 
-use crate::task_parser::{ParsedTask};
+fn handle_generate_dashboard(tasks_dir: &Path) {
+    let tasks_file = tasks_dir.join("Tasks.md");
+    let tasks = parse_tasks_from_file(&tasks_file);
+    normalize_task_file(&tasks, &tasks_file);
+    generate_dashboard(&tasks, tasks_dir);
+}
 
-pub fn normalize_task_file(tasks_file: &PathBuf) {
+fn parse_tasks_from_file(tasks_file: &PathBuf) -> Vec<ParsedTask> {
     let mut content = String::new();
     File::open(tasks_file)
         .expect("Failed to read tasks file")
         .read_to_string(&mut content)
         .unwrap();
 
-    let mut normalized_lines = Vec::new();
-
+    let mut tasks = Vec::new();
     for line in content.lines() {
         let trimmed = line.trim();
-        if trimmed.is_empty() { continue; }
-        
+        if trimmed.is_empty() {
+            continue;
+        }
         if let Some(task) = ParsedTask::from_line(trimmed) {
-            normalized_lines.push(task.to_line());
+            tasks.push(task);
         }
     }
 
-    let new_content = normalized_lines.join("\n") + "\n";
+    tasks
+}
 
-    if content != new_content {
-        let mut f = OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .open(tasks_file)
-            .unwrap();
-        write!(f, "{}", new_content).unwrap();
-        println!("Normalized {} tasks", normalized_lines.len());
+fn normalize_task_file(tasks: &[ParsedTask], tasks_file: &PathBuf) {
+    let normalized_lines: Vec<String> = tasks.iter().map(|task| task.to_line()).collect();
+
+    let new_content = normalized_lines.join("\n") + "\n";
+    let mut f = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(tasks_file)
+        .unwrap();
+    write!(f, "{}", new_content).unwrap();
+    println!("Normalized {} tasks", normalized_lines.len());
+}
+
+fn generate_dashboard(tasks: &[ParsedTask], tasks_folder: &Path) {
+    let data_grouped: HashMap<String, Vec<&ParsedTask>> = tasks
+        .iter()
+        .chunk_by(|t| t.bucket.clone())
+        .into_iter()
+        .map(|(key, chunk)| (key, chunk.collect::<Vec<&ParsedTask>>()))
+        .collect();
+
+    let mut dashboard: Vec<String> = Vec::new();
+
+    for (bucket, tasks) in data_grouped {
+        dashboard.push(bucket);
+
+        for task in tasks {
+            dashboard.push(task.to_line());
+        }
+
+        dashboard.push("\n\n".to_string());
     }
+
+    let dashboard_file = tasks_folder.join("Dashboard.md");
+    let new_content = dashboard.join("\n") + "\n";
+    let mut f = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(dashboard_file)
+        .unwrap();
+    write!(f, "{}", new_content).unwrap();
 }

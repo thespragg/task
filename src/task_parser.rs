@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use regex::Regex;
 use std::fmt;
 use uuid::Uuid;
@@ -11,6 +12,7 @@ pub struct ParsedTask {
     pub link: Option<String>,
     pub priority: Option<u8>,
     pub id: Uuid,
+    pub created_at: DateTime<Utc>,
 }
 
 impl ParsedTask {
@@ -23,6 +25,7 @@ impl ParsedTask {
             link: None,
             priority: None,
             id: Uuid::new_v4(),
+            created_at: Utc::now(),
         }
     }
 
@@ -36,7 +39,7 @@ impl ParsedTask {
 
     fn parse_strict(line: &str) -> Option<Self> {
         let re = Regex::new(
-            r#"^- \[(?P<done>[ xX])\]\s+(?P<text>.*?)\s+#(?P<bucket>\w+)(?:\s+@(?P<due>\d{4}-\d{2}-\d{2}))?(?:\s+!(?P<priority>\d+))?(?:\s+\[\[(?P<link>.*?)\]\])?\s+id:(?P<id>[0-9a-fA-F-]+)$"#
+            r#"^- \[(?P<done>[ xX])\]\s+(?P<text>.*?)\s+#(?P<bucket>\w+)(?:\s+@(?P<due>\d{4}-\d{2}-\d{2}))?(?:\s+!(?P<priority>\d+))?(?:\s+\[\[(?P<link>.*?)\]\])?\s+id:(?P<id>[0-9a-fA-F-]+)(?:\s+created:(?P<created>[^\s]+))?\s*$"#
         ).unwrap();
 
         let caps = re.captures(line)?;
@@ -50,6 +53,11 @@ impl ParsedTask {
             .and_then(|m| m.as_str().parse::<u8>().ok());
         let link = caps.name("link").map(|m| m.as_str().to_string());
         let id = Uuid::parse_str(&caps["id"]).ok()?;
+        let created_at = caps
+            .name("created")
+            .and_then(|m| DateTime::parse_from_rfc3339(m.as_str()).ok())
+            .map(|dt| dt.with_timezone(&Utc))
+            .unwrap_or_else(Utc::now);
 
         Some(Self {
             completed,
@@ -59,6 +67,7 @@ impl ParsedTask {
             link,
             priority,
             id,
+            created_at,
         })
     }
 
@@ -70,6 +79,7 @@ impl ParsedTask {
         let priority = extract_priority(line);
         let link = extract_link(line);
         let id = extract_id(line).unwrap_or_else(Uuid::new_v4);
+        let created_at = extract_created_at(line).unwrap_or_else(Utc::now);
 
         let text = extract_clean_text(line);
 
@@ -81,6 +91,7 @@ impl ParsedTask {
             link,
             priority,
             id,
+            created_at,
         })
     }
 
@@ -101,16 +112,18 @@ impl ParsedTask {
             .map(|l| format!(" [[{}]]", l))
             .unwrap_or_default();
         let id = format!(" id:{}", self.id);
+        let created = format!(" created:{}", self.created_at.to_rfc3339());
 
         format!(
-            "- [{}] {} #{}{}{}{}{}",
+            "- [{}] {} #{}{}{}{}{}{}",
             if self.completed { "x" } else { " " },
             self.text,
             self.bucket,
             due,
             prio,
             link,
-            id
+            id,
+            created
         )
     }
 
@@ -126,11 +139,6 @@ impl ParsedTask {
 
     pub fn with_priority(mut self, priority: u8) -> Self {
         self.priority = Some(priority);
-        self
-    }
-
-    pub fn with_completed(mut self, completed: bool) -> Self {
-        self.completed = completed;
         self
     }
 }
@@ -173,6 +181,14 @@ fn extract_id(line: &str) -> Option<Uuid> {
         .and_then(|m| Uuid::parse_str(m.as_str()).ok())
 }
 
+fn extract_created_at(line: &str) -> Option<DateTime<Utc>> {
+    let re = Regex::new(r"created:([^\s]+)").unwrap();
+    re.captures(line)
+        .and_then(|c| c.get(1))
+        .and_then(|m| DateTime::parse_from_rfc3339(m.as_str()).ok())
+        .map(|dt| dt.with_timezone(&Utc))
+}
+
 fn extract_clean_text(line: &str) -> String {
     let mut text = line.to_string();
 
@@ -191,10 +207,7 @@ fn extract_clean_text(line: &str) -> String {
         .replace(&text, "")
         .to_string();
 
-    text = Regex::new(r"!\d+")
-        .unwrap()
-        .replace(&text, "")
-        .to_string();
+    text = Regex::new(r"!\d+").unwrap().replace(&text, "").to_string();
 
     text = Regex::new(r"\[\[.*?\]\]")
         .unwrap()
@@ -206,29 +219,17 @@ fn extract_clean_text(line: &str) -> String {
         .replace(&text, "")
         .to_string();
 
+    text = Regex::new(r"created:[^\s]+")
+        .unwrap()
+        .replace(&text, "")
+        .to_string();
+
     text.trim().to_string()
 }
 
-
-pub struct TaskBuilder {
-    text: String,
-    bucket: Option<String>,
-    due: Option<String>,
-    link: Option<String>,
-    priority: Option<u8>,
-}
+pub struct TaskBuilder;
 
 impl TaskBuilder {
-    pub fn new(text: String) -> Self {
-        Self {
-            text,
-            bucket: None,
-            due: None,
-            link: None,
-            priority: None,
-        }
-    }
-
     pub fn parse_with_flags(
         text: String,
         bucket_flag: Option<String>,
@@ -275,7 +276,7 @@ mod tests {
 
     #[test]
     fn test_parse_full_line() {
-        let line = "- [ ] Buy groceries #home @2024-01-15 !2 [[Store]] id:550e8400-e29b-41d4-a716-446655440000";
+        let line = "- [ ] Buy groceries #home @2024-01-15 !2 [[Store]] id:550e8400-e29b-41d4-a716-446655440000 created:2024-01-01T10:00:00Z";
         let task = ParsedTask::from_line(line).unwrap();
 
         assert_eq!(task.text, "Buy groceries");
@@ -284,6 +285,7 @@ mod tests {
         assert_eq!(task.priority, Some(2));
         assert_eq!(task.link, Some("Store".to_string()));
         assert!(!task.completed);
+        assert_eq!(task.created_at.to_rfc3339(), "2024-01-01T10:00:00+00:00");
     }
 
     #[test]
@@ -295,6 +297,7 @@ mod tests {
         assert_eq!(task.bucket, "work");
         assert_eq!(task.due, None);
         assert_eq!(task.priority, None);
+        // created_at will be set to current time
     }
 
     #[test]
@@ -328,7 +331,7 @@ mod tests {
     #[test]
     fn test_roundtrip() {
         let original =
-            "- [ ] Test task #work @2024-01-15 !3 [[Note]] id:550e8400-e29b-41d4-a716-446655440000";
+            "- [ ] Test task #work @2024-01-15 !3 [[Note]] id:550e8400-e29b-41d4-a716-446655440000 created:2024-01-01T10:00:00Z";
         let task = ParsedTask::from_line(original).unwrap();
         let formatted = task.to_line();
         let reparsed = ParsedTask::from_line(&formatted).unwrap();
@@ -338,5 +341,6 @@ mod tests {
         assert_eq!(task.due, reparsed.due);
         assert_eq!(task.priority, reparsed.priority);
         assert_eq!(task.id, reparsed.id);
+        assert_eq!(task.created_at, reparsed.created_at);
     }
 }
