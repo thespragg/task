@@ -81,7 +81,8 @@ if [ "$action" = "install" ]; then
     if folder=$(realpath "$folder" 2>/dev/null); then
         log info "Canonical path: $folder"
     else
-        log error "Error: path does not exist or is invalid"
+        log error "Error: the provided folder doesn't exist, check the path."
+        exit 1
     fi
 
     if [ -d "$HOME/.task" ]; then
