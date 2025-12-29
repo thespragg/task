@@ -1,19 +1,26 @@
 
 # Task
 
-**Task** is a lightweight, extensible task management tool designed to integrate with Obsidian-style workflows. It provides a single binary for adding tasks, running a background worker, and managing tasks stored in Markdown files. Tasks can include metadata like bucket, due date, and context links, either via CLI flags or embedded in the text.
+**Task** is a lightweight task management tool designed to produce "live" markdown files. Tasks can include metadata like bucket, due date, and context links, either via CLI flags or embedded in the text.
 
 ## Installation
 
-Download the latest binary from Releases
+For a new installation run
 
-Put the binary in  `/usr/local/bin/` (or your preferred directory)
-
-Install the worker
-```bash 
-sudo task --worker --folder <Obsidian Vault> --install
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://task.thespragg.dev/ | sh -s install
 ```
-The worker will generate the task dashboard and keep it in sync with the Inbox and bucket files.
+
+Upgrading to the latest version
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://task.thespragg.dev/ | sh -s upgrade
+```
+
+Uninstall and remove all related files (leaves the task list)
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://task.thespragg.dev/ | sh -s uninstall
+```
 
 ## Usage
 
