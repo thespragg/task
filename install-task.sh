@@ -129,12 +129,14 @@ if [ "$action" = "install" ]; then
 
     log info "Downloading $binary_name..."
 
-    if curl -L -o "$binary_name" "$asset_url" >/dev/null; then
-        mv "$binary_name" "$task_bin"
-        mv "$task_bin/$binary_name" "$task_bin/task"
+     tmpfile=$(mktemp)
+
+    if curl -L -o "$tmpfile" "$asset_url" >/dev/null 2>&1; then
+        mv "$tmpfile" "$task_bin/task"
         chmod +x "$task_bin/task"
-        log info "Downloaded and moved binary to $task_bin"
+        log info "Installed binary to $task_bin/task"
     else
+        rm -f "$tmpfile"
         log error "Failed to download $binary_name from $asset_url"
         exit 1
     fi
@@ -322,11 +324,14 @@ elif [ "$action" = "upgrade" ]; then
 
     log info "Downloading latest version of $binary_name..."
 
-    if curl -L -o "$binary_name" "$asset_url" >/dev/null 2>&1; then
-        mv "$binary_name" "$task_bin/task"
+    tmpfile=$(mktemp)
+
+    if curl -L -o "$tmpfile" "$asset_url" >/dev/null 2>&1; then
+        mv "$tmpfile" "$task_bin/task"
         chmod +x "$task_bin/task"
-        log info "Upgraded binary at $task_bin/task"
+        log info "Upgraded binary in $task_bin/task"
     else
+        rm -f "$tmpfile"
         log error "Failed to download $binary_name from $asset_url"
         exit 1
     fi
