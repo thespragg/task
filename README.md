@@ -8,7 +8,8 @@
 For a new installation run
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://task.thespragg.dev/ | sh -s install
+// The script will create a Tasks folder and relevant md files under it at your path
+curl --proto '=https' --tlsv1.2 -sSf https://task.thespragg.dev/ | sh -s install --folder your/folder/path
 ```
 
 Upgrading to the latest version
