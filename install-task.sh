@@ -129,7 +129,7 @@ if [ "$action" = "install" ]; then
 
     log info "Downloading $binary_name..."
 
-    if curl -L -o "$binary_name" "$asset_url" >/dev/null 2>&1; then
+    if curl -L -o "$binary_name" "$asset_url" >/dev/null; then
         mv "$binary_name" "$task_bin"
         mv "$task_bin/$binary_name" "$task_bin/task"
         chmod +x "$task_bin/task"
