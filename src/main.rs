@@ -4,7 +4,7 @@ mod worker;
 mod task_parser;
 
 use clap::Parser;
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 #[derive(Parser)]
 #[clap(name = "task", about = "Task CLI with integrated worker")]
@@ -46,12 +46,16 @@ fn main() {
     }
 
     if args.worker {
+        println!("Running as a worker service.");
+        
         let folder = args
             .folder
             .clone()
             .expect("Worker mode requires --folder/-f");
 
-        worker::run_worker(folder).unwrap();
+        let absolute_folder = fs::canonicalize(folder).unwrap();
+        println!("Using folder: {:?}", absolute_folder);
+        worker::run_worker(absolute_folder).unwrap();
     } else {
         let task_text_raw = args.text.join(" ");
 

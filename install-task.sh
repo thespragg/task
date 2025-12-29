@@ -57,9 +57,31 @@ if [ "$action" = "install" ]; then
         fi
     done
 
+    folder=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --folder)
+                shift
+                folder="$1"
+            ;;
+        esac
+        shift
+    done
+
     if [ -f "$task_bin/task" ]; then
         log info "Task binary already exists at $task_bin/task. Use 'upgrade' to update it instead of 'install'."
         exit 0
+    fi
+
+    if [ -z "$folder" ]; then
+        log error "For install, --folder must be specified, this is where you want the Tasks folder to be created."
+        exit 1
+    fi
+
+    if folder=$(realpath "$folder" 2>/dev/null); then
+        log info "Canonical path: $folder"
+    else
+        log error "Error: path does not exist or is invalid"
     fi
 
     if [ -d "$HOME/.task" ]; then
@@ -166,7 +188,7 @@ if [ "$action" = "install" ]; then
       <string>$task_exe</string>
       <string>--worker</string>
       <string>--folder</string>
-      <string>$HOME/.task</string>
+      <string>$folder</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -201,7 +223,7 @@ Description=Task CLI Worker
 After=network.target
 
 [Service]
-ExecStart=$task_exe --worker --folder $HOME/.task
+ExecStart=$task_exe --worker --folder $folder
 Restart=always
 Environment=RUST_BACKTRACE=1
 
