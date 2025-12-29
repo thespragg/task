@@ -57,6 +57,11 @@ if [ "$action" = "install" ]; then
         fi
     done
 
+    if [ -f "$task_bin/task" ]; then
+        log info "Task binary already exists at $task_bin/task. Use 'upgrade' to update it instead of 'install'."
+        exit 0
+    fi
+
     if [ -d "$HOME/.task" ]; then
         log trace "$HOME/.task already exists, skipping"
         [ ! -d "$task_bin" ] && mkdir "$task_bin" && log trace "Created $task_bin folder"
